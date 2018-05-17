@@ -1,0 +1,16 @@
+.DS_Store
+.idea
+__MACOSX
+*.ai
+*.log
+*.pdf
+*.psd
+*.sublime*
+.publish
+node_modules/
+front/node_modules/
+Thumbs.db
+/sources/
+/static/
+/public/
+/front/
