@@ -1,12 +1,9 @@
 {
   "name": "hydrapi",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "start": "nodemon --inspect app/index.js",
-    "setup": "node app/setup.js"
-  },
+  "author": "Babaev Roman",
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -25,5 +22,12 @@
     "eslint-plugin-jsx-a11y": "^6.0.3",
     "eslint-plugin-react": "^7.8.2",
     "nodemon": "^1.17.3"
+  },
+  "repository": {
+    "type" : "git",
+    "url" : "github:rgbabaev/hydrapi"
+  },
+  "engines": {
+    "node" : ">=8.0"
   }
 }
