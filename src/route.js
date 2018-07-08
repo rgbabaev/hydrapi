@@ -1,7 +1,13 @@
-const ObjectID = require('mongodb').ObjectID;
+const { ObjectID } = require('mongodb');
 const _ = require('lodash');
 
-const { isUnique, validateInputItems, prettyIds, unPrettyIds } = require('./common');
+const {
+  isUnique,
+  prettyIds,
+  handleError,
+  unPrettyIds,
+} = require('./common');
+const { validateInputItems } = require('./lifecycle.js');
 
 module.exports = ({
   modelName,
@@ -18,13 +24,16 @@ module.exports = ({
       let data = await collection.find({}).toArray();
       // beforeGetResponseSend
       data = typeof beforeGetResponseSend === 'function' ?
-        await beforeGetResponseSend({ db, [modelName]: data }) :
+        await beforeGetResponseSend({
+          db,
+          [modelName]: data,
+          req
+        }) :
         data;
       res.send({ data: { [modelName]: prettyIds(data) } });
     }
     catch (err) {
-      res.send({ error: err.toString() });
-      console.error(err);
+      handleError(err, res);
     }
   });
 
@@ -35,8 +44,7 @@ module.exports = ({
       if (!(items instanceof Array) || items.length === 0)
         throw new Error(`Invalid request: ${modelName} must be an non-empty array.`);
 
-      items = validateInputItems(schema, items);
-
+      items = await validateInputItems(schema, items);
       if (!await isUnique(db, modelName, schema, items))
         throw new Error('Elements not unique');
 
@@ -46,11 +54,11 @@ module.exports = ({
         .then(r => res.send({ data: { [modelName]: prettyIds(r.ops) } }))
     }
     catch (err) {
-      res.send({ error: err.toString() });
-      console.error(err);
+      handleError(err, res);
     }
   });
 
+  // TODO: answer with some bad items responses
   app.patch(`/${modelName}`, async (req, res) => {
     try {
       let items = _.get(req, `body.${modelName}`, undefined);
@@ -58,8 +66,7 @@ module.exports = ({
       if (!(items instanceof Array) || items.length === 0)
         throw new Error(`Invalid request: ${modelName} must be an non-empty array.`);
 
-      items = validateInputItems(schema, unPrettyIds(items));
-
+      items = await validateInputItems(schema, unPrettyIds(items));
       if (!await isUnique(db, modelName, schema, items))
         throw new Error('Elements not unique');
 
@@ -68,14 +75,16 @@ module.exports = ({
       const result = await Promise.all(
         items.map(
           async ({ _id, ...item }) => {
-            console.log('DB updateOne start', _id);
             const r = await collection.updateOne(
               { _id },
               { $set: item }
             );
-            console.warn(`DB updateOne`, _id, r);
+
             if (_.get(r, 'modifiedCount') !== 1)
-              throw new Error('Update operation error');
+              throw new Error(
+                `Update operation error. ` +
+                `Matched: ${r.matchedCount}, modified: ${r.modifiedCount}.`
+              );
             return { _id };
           }
         )
@@ -85,9 +94,8 @@ module.exports = ({
         res.send({ data: { [modelName]: prettyIds(data) } });
       });
     }
-    catch (error) {
-      res.send({ error: error.toString() });
-      console.error(error);
+    catch (err) {
+      handleError(err, res);
     }
   });
 
@@ -108,9 +116,8 @@ module.exports = ({
           });
         })
     }
-    catch (error) {
-      res.send({ error: error.toString() });
-      console.error(error);
+    catch (err) {
+      handleError(err, res);
     }
   });
 };
