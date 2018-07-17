@@ -28,7 +28,8 @@ const isUnique = async (db, modelName, schema, items) => {
     if (schema[key].unique) keys.push(key);
 
   if (!keys.length)
-    throw new Error('Unique checking error. No keys to check.');
+    return true;
+    // throw new Error('Unique checking error. No keys to check.');
   if (!items.length)
     throw new Error('Unique checking error. No elements to check.');
 
