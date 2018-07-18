@@ -1,3 +1,6 @@
+const fs = require('fs');
+const path = require('path');
+
 const createRoute = require('./route');
 
 const MODEL_NAME = 'fileStorage';
@@ -38,4 +41,19 @@ const route = createRoute({
   schema: SCHEMA
 });
 
-module.exports = (app, db) => route(app, db);
+module.exports = (app, db) => {
+  route(app, db);
+
+  app.post(`/${MODEL_NAME}/:fileName`, (req, res) => {
+    // TODO: сначала проверим, зареган ли этот файл в коллекции fileStorage
+    const dirName = path.join(path.dirname(require.main.filename), 'upload');
+    const fullPath = path.join(dirName, req.params.fileName);
+    const file = fs.createWriteStream(fullPath);
+    req.pipe(file);
+    console.log(`UPLOADED file ${fullPath}`);
+
+    req.on('end', () => {
+      res.end();
+    });
+  });
+};
