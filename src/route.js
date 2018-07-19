@@ -13,20 +13,21 @@ module.exports = ({
   modelName,
   schema,
   handlers: {
-    beforeGetResponseSend
+    beforeDeleteQuery,
+    afterGetQuery
   } = {}
 }) => (app, db) => {
   const collection = db.collection(modelName);
 
   app.get(`/${modelName}`, async (req, res) => {
     try {
-      // beforeDatabaseQuery
+      // beforeGetQuery
       let data = await collection.find({}).toArray();
-      // beforeGetResponseSend
-      data = typeof beforeGetResponseSend === 'function' ?
-        await beforeGetResponseSend({
+      // afterGetQuery
+      data = typeof afterGetQuery === 'function' ?
+        await afterGetQuery({
           db,
-          [modelName]: data,
+          data,
           req
         }) :
         data;
@@ -101,14 +102,22 @@ module.exports = ({
 
   app.delete(`/${modelName}`, async (req, res) => {
     try {
-      let productIds = _.get(req, `body.${modelName}`, undefined);
+      let entityIds = _.get(req, `body.${modelName}`, undefined);
 
-      if (!(productIds instanceof Array) || productIds.length === 0)
+      if (!(entityIds instanceof Array) || entityIds.length === 0)
         throw new Error(`Invalid request: ${modelName} must be an array of ${modelName} IDs.`);
 
-      productIDs = productIds.map(id => ({ '_id': new ObjectID(id) }));
+      entityIds = entityIds.map(id => ({ '_id': new ObjectID(id) }));
 
-      await collection.deleteMany({ $or: productIDs })
+      entityIds = typeof beforeDeleteQuery === 'function' ?
+        await beforeDeleteQuery({
+          db,
+          entityIds,
+          req
+        }) :
+        entityIds;
+
+      await collection.deleteMany({ $or: entityIds })
         .then(data => {
           res.send({
             deletedCount: data.deletedCount,
