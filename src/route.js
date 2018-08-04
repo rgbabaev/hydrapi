@@ -28,7 +28,8 @@ module.exports = ({
         await afterGetQuery({
           db,
           data,
-          req
+          req,
+          res
         }) :
         data;
       res.send({ data: { [modelName]: prettyIds(data) } });
