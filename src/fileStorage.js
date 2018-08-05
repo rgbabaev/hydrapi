@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { ObjectID } = require('mongodb');
 const _ = require('lodash');
-const getFileType = require('file-type');
+const mime = require('mime-types');
 
 const createRoute = require('./route');
 
@@ -30,7 +30,6 @@ const fsUnlink = path => new Promise(r => fs.unlink(path, err => r(!err)));
 
 const MODEL_NAME = 'fileStorage';
 const UPLOAD_DIR = path.join(path.dirname(require.main.filename), 'upload');
-const TEST_CHUNK_SIZE = 4100;
 const FILE_ROUTE = `/${MODEL_NAME}/file`;
 
 const required = true;
@@ -57,11 +56,12 @@ const SCHEMA = {
   },
 };
 
-const addUrls = ({ data = [], req }) => Promise.all(data.map(async i => {
-  const filePath = path.join(UPLOAD_DIR, i._id.toString());
+const addPaths = ({ items = [], req }) => Promise.all(items.map(async i => {
+  // make this part shared
+  const filePath = path.join(UPLOAD_DIR, `${i._id.toString()}.${i.extension}`);
   i.loaded = await fsAccess(filePath);
   if (i.loaded) {
-    i.url = `${req.baseUrl}${FILE_ROUTE}/${i._id.toString()}`;
+    i.url = `${req.baseUrl}${FILE_ROUTE}/${i._id.toString()}.${i.extension}`;
   }
   return i;
 }));
@@ -70,17 +70,33 @@ const route = createRoute({
   modelName: MODEL_NAME,
   schema: SCHEMA,
   handlers: {
-    afterGetQuery: addUrls,
-    beforeDeleteQuery: ({ entityIds = [] }) => {
-      return Promise.all(entityIds.filter(async i => {
-        try {
-          const filePath = path.join(UPLOAD_DIR, i._id.toString());
-          return await fsUnlink(filePath);
-        }
-        catch (err) {
-          return false;
-        }
+    afterGetQuery: addPaths,
+    beforeAddQuery: ({ items }) => items.map(({
+      originalName = '',
+      ...rest
+    }) => ({
+      originalName,
+      extension: path.extname(originalName).substr(1),
+      ...rest
+    })),
+    beforeDeleteQuery: async ({ entityIds = [], db, req }) => {
+      let items = await db
+        .collection(MODEL_NAME)
+        .find({ $or: entityIds })
+        .toArray();
+
+      items = await Promise.all(items.map(async i => {
+        const filePath = path.join(UPLOAD_DIR, `${i._id.toString()}.${i.extension}`);
+        i.fileUnlinked = await fsUnlink(filePath);
+        return i;
       }));
+
+      return items.reduce(
+        // delete db entry only after succesful file deletion
+        // (acc, { _id, fileUnlinked }) => fileUnlinked ? [...acc, { _id }] : acc,
+        (acc, { _id, fileUnlinked }) => [...acc, { _id }],
+        []
+      );
     }
   }
 });
@@ -90,10 +106,10 @@ exports.route = (app, db) => {
 
   app.post(`${FILE_ROUTE}/:fileName`, async (req, res) => {
     const collection = db.collection(MODEL_NAME);
-    // TODO: проверим, зареган ли этот файл в коллекции fileStorage, есть ли файл с таким именем
     try {
-      const id = new ObjectID(req.params.fileName);
-      const filePath = path.join(UPLOAD_DIR, req.params.fileName);
+      const { fileName } = req.params;
+      const id = new ObjectID(fileName.substr(0, 24));
+      const filePath = path.join(UPLOAD_DIR, fileName);
 
       if (await fsAccess(filePath)) {
         res.status(422).end();
@@ -101,18 +117,14 @@ exports.route = (app, db) => {
       }
 
       let data = await collection.findOne({ _id: id });
-      if (data === null) {
+      if (data === null || `${id.toString()}.${data.extension}` !== fileName) {
         res.status(404).end();
         return;
       }
 
-      console.log(data);
       const fileStream = fs.createWriteStream(filePath);
       req.pipe(fileStream);
-
-      req.on('end', () => {
-        res.end();
-      });
+      req.on('end', () => res.end());
     }
     catch (err) {
       res.status(500).end();
@@ -120,22 +132,16 @@ exports.route = (app, db) => {
   });
 
   app.get(`${FILE_ROUTE}/:fileName`, async (req, res) => {
-    const collection = db.collection(MODEL_NAME);
     try {
-      const id = new ObjectID(req.params.fileName);
-      const filePath = path.join(UPLOAD_DIR, id.toString());
+      const id = new ObjectID(req.params.fileName.substr(0, 24));
+      const fileExtension = path.extname(req.params.fileName);
+      const filePath = path.join(UPLOAD_DIR, `${id.toString()}${fileExtension}`);
+      const mimeType = mime.lookup(filePath);
 
-      const buffer = Buffer.alloc(TEST_CHUNK_SIZE);
-      const fd = await fsOpen(filePath, 'r');
-      await fsRead(fd, buffer, 0, TEST_CHUNK_SIZE, null);
-      const fileType = getFileType(buffer);
-      if (fileType)
-        res.set('Content-Type', fileType.mime);
+      if (mimeType) res.set('Content-Type', mimeType);
       const fileStream = fs.createReadStream(filePath);
+      fileStream.on('error', err => res.status(404).end());
       fileStream.pipe(res);
-      await fsClose(fd);
-
-      console.log('getFileType', fileType);
 
       // Are we need this?
       // fileStream.on('end', () => {
@@ -143,19 +149,18 @@ exports.route = (app, db) => {
       // });
     }
     catch (err) {
-      console.error(err);
       res.status(404).end();
     }
   });
 };
 
 exports.getFilesData = async ({ db, entityIds = [], req }) => {
-  let data = await db
+  let items = await db
     .collection(MODEL_NAME)
     .find({
       $or: entityIds.map(i =>({ _id: i }))
     })
     .toArray();
-  data = await addUrls({ data, req });
-  return data.map(({ _id, ...rest }) => ({ id: _id, ...rest }));
+  items = await addPaths({ items, req });
+  return items.map(({ _id, ...rest }) => ({ id: _id, ...rest }));
 };
