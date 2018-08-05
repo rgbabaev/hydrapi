@@ -13,6 +13,7 @@ module.exports = ({
   modelName,
   schema,
   handlers: {
+    beforeAddQuery,
     beforeDeleteQuery,
     afterGetQuery
   } = {}
@@ -22,16 +23,17 @@ module.exports = ({
   app.get(`/${modelName}`, async (req, res) => {
     try {
       // beforeGetQuery
-      let data = await collection.find({}).toArray();
+      let items = await collection.find({}).toArray();
       // afterGetQuery
-      data = typeof afterGetQuery === 'function' ?
+      items = typeof afterGetQuery === 'function' ?
         await afterGetQuery({
           db,
-          data,
-          req
+          items,
+          req,
+          res
         }) :
-        data;
-      res.send({ data: { [modelName]: prettyIds(data) } });
+        items;
+      res.send({ data: { [modelName]: prettyIds(items) } });
     }
     catch (err) {
       handleError(err, res);
@@ -48,6 +50,15 @@ module.exports = ({
       items = await validateInputItems(schema, items);
       if (!await isUnique(db, modelName, schema, items))
         throw new Error('Elements not unique');
+
+      items = typeof beforeAddQuery === 'function' ?
+        await beforeAddQuery({
+          db,
+          items,
+          req,
+          res
+        }) :
+        items;
 
       items = items.map(item => _.omitBy(item, i => i === undefined));
 
@@ -91,7 +102,7 @@ module.exports = ({
         )
       );
 
-      collection.find({ $or: result }).toArray().then(data => {
+      await collection.find({ $or: result }).toArray().then(data => {
         res.send({ data: { [modelName]: prettyIds(data) } });
       });
     }
@@ -113,9 +124,14 @@ module.exports = ({
         await beforeDeleteQuery({
           db,
           entityIds,
-          req
+          req,
+          res
         }) :
         entityIds;
+
+      if (!entityIds.length) {
+        throw new Error('Nothing to delete');
+      }
 
       await collection.deleteMany({ $or: entityIds })
         .then(data => {
