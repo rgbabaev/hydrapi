@@ -14,6 +14,7 @@ module.exports = ({
   schema,
   handlers: {
     beforeAddQuery,
+    beforePatchQuery,
     beforeDeleteQuery,
     afterGetQuery
   } = {}
@@ -83,6 +84,15 @@ module.exports = ({
         throw new Error('Elements not unique');
 
       items = items.map(item => _.omitBy(item, i => i === undefined));
+
+      items = typeof beforePatchQuery === 'function' ?
+        await beforePatchQuery({
+          db,
+          items,
+          req,
+          res
+        }) :
+        items;
 
       const result = await Promise.all(
         items.map(
