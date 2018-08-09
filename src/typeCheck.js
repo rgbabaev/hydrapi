@@ -116,6 +116,8 @@ const shape = model => async valueObject => {
       multiple: model[key].multiple
     });
   }
+
+  return valueObject;
 };
 
 module.exports = {
