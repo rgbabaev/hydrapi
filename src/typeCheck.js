@@ -12,7 +12,7 @@ const simpleTypes = {
   },
 
   urlCode: value => {
-    if (!(typeof value === 'string' && /^[a-z0-9][a-z0-9-]+[a-z0-9]$/.test(value)))
+    if (!(typeof value === 'string' && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(value)))
       throw new Error(`Must contain only lower case letters, digits and "-".`);
     return value;
   },
