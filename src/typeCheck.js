@@ -98,6 +98,8 @@ const relation = ({
 };
 
 const shape = model => async valueObject => {
+  if (typeof valueObject !== 'object') return;
+
   const modelKeys = Object.keys(model);
 
   const excessKeys = Object.keys(_.omit(valueObject, modelKeys));
