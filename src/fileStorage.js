@@ -41,28 +41,22 @@ const SCHEMA = {
     type: 'boolean',
     defaultValue: true
   },
-  module: {
-    type: 'string',
-    required
-  },
-  entity: {
-    type: 'id'
-  },
   originalName: {
     type: 'string',
   },
   contentType: {
     type: 'string'
   },
+  size: {
+    type: 'number'
+  }
 };
 
 const addPaths = ({ items = [], req }) => Promise.all(items.map(async i => {
   // make this part shared
   const filePath = path.join(UPLOAD_DIR, `${i._id.toString()}.${i.extension}`);
   i.loaded = await fsAccess(filePath);
-  if (i.loaded) {
-    i.url = `${req.baseUrl}${FILE_ROUTE}/${i._id.toString()}.${i.extension}`;
-  }
+  i.url = `${req.baseUrl}${FILE_ROUTE}/${i._id.toString()}.${i.extension}`;
   return i;
 }));
 
@@ -71,6 +65,7 @@ const route = createRoute({
   schema: SCHEMA,
   handlers: {
     afterGetQuery: addPaths,
+    afterAddQuery: addPaths,
     beforeAddQuery: ({ items }) => items.map(({
       originalName = '',
       ...rest
@@ -124,7 +119,7 @@ exports.route = (app, db) => {
 
       const fileStream = fs.createWriteStream(filePath);
       req.pipe(fileStream);
-      req.on('end', () => res.end());
+      req.on('end', () => res.status(202).end());
     }
     catch (err) {
       res.status(500).end();
@@ -158,7 +153,7 @@ exports.getFilesData = async ({ db, entityIds = [], req }) => {
   let items = await db
     .collection(MODEL_NAME)
     .find({
-      $or: entityIds.map(i =>({ _id: i }))
+      $or: entityIds.map(i => ({ _id: i }))
     })
     .toArray();
   items = await addPaths({ items, req });

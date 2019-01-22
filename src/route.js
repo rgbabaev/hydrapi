@@ -16,7 +16,8 @@ module.exports = ({
     beforeAddQuery,
     beforePatchQuery,
     beforeDeleteQuery,
-    afterGetQuery
+    afterGetQuery,
+    afterAddQuery
   } = {}
 }) => (app, db) => {
   const collection = db.collection(modelName);
@@ -64,7 +65,19 @@ module.exports = ({
       items = items.map(item => _.omitBy(item, i => i === undefined));
 
       await collection.insertMany(items)
-        .then(r => res.send({ data: { [modelName]: prettyIds(r.ops) } }))
+        .then(async ({ ops: items}) => {
+          // afterAddQuery
+          items = typeof afterAddQuery === 'function' ?
+            await afterAddQuery({
+              db,
+              items,
+              req,
+              res
+            }) :
+            items;
+
+          res.send({ data: { [modelName]: prettyIds(items) } });
+        });
     }
     catch (err) {
       handleError(err, res);
