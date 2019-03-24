@@ -9,9 +9,9 @@ const unPrettyIds = arr => arr.map(
   ({ id, ...rest }) => ({ _id: new ObjectID(id), ...rest })
 );
 
-const isEmpty = v => typeof v === 'object' ?
+const isEmpty = v => v instanceof Object ?
   _.isEmpty(v) :
-  v === undefined || v === null || v === '' || v === 0;
+  v === undefined || v === null || v === '';
 
 // const isRequired = ({ fieldName, value, errors = [], ...rest }) => {
 //   if (isEmpty(value))
@@ -29,7 +29,7 @@ const isUnique = async (db, modelName, schema, items) => {
 
   if (!keys.length)
     return true;
-    // throw new Error('Unique checking error. No keys to check.');
+  // throw new Error('Unique checking error. No keys to check.');
   if (!items.length)
     throw new Error('Unique checking error. No elements to check.');
 
