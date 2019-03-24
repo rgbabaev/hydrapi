@@ -79,6 +79,10 @@ const relation = ({
   collectionName,
   checkTargetExists = true
 }) => async value => {
+  if (isEmpty(value)) {
+    return null;
+  }
+
   try {
     simpleTypes.id(value);
     if (!(value instanceof ObjectID))
