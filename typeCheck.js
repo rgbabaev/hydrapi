@@ -1,1 +1,1 @@
-module.exports = require('./src/typeCheck');
+module.exports = require('./lib/typeCheck');
