@@ -1,7 +1,7 @@
 {
   "parserOptions": {
     "ecmaVersion": 6,
-    "sourceType": "module",
+    "sourceType": "module"
   },
   "env": {
     "node": true
@@ -18,7 +18,7 @@
     "arrow-parens"                            : ["error", "as-needed"],
     "one-var"                                 : ["off"],
     "comma-dangle"                            : ["off"],
-    "brace-style"                             : ["error", "stroustrup", { "allowSingleLine": true }],
+    "brace-style"                             : ["error", "1tbs", { "allowSingleLine": true }],
     "indent"                                  : ["error", 2, { "SwitchCase": 1 }],
     "key-spacing"                             : ["error", {"afterColon" : true, "mode" : "strict"}],
     "max-len"                                 : ["error", 120, 2],
@@ -34,6 +34,8 @@
     "import/no-unresolved"                    : ["off"],
     "linebreak-style"                         : ["off"],
     "no-param-reassign"                       : ["off"],
+    "no-underscore-dangle"                    : ["off"],
+    "function-paren-newline"                  : ["off"],
     "no-mixed-operators"                      : ['error', {
                                                   groups: [
                                                     ['+', '-', '*', '/', '%', '**'],
@@ -43,6 +45,6 @@
                                                     ['in', 'instanceof']
                                                   ],
                                                   allowSamePrecedence: true
-                                                }],
+                                                }]
   }
 }

@@ -1,17 +1,25 @@
-const { ObjectID } = require('mongodb');
-const _ = require('lodash');
+import { ObjectID, Db } from 'mongodb';
+import { Response } from 'express';
+import lodashIsEmpty from 'lodash/isEmpty';
+import lodashFlatten from 'lodash/flatten';
 
-const prettyIds = arr => arr.map(
+interface IDBEntry {
+  _id: ObjectID;
+}
+
+export const prettyIds = <T extends IDBEntry>(arr: T[]) => arr.map(
   ({ _id, ...rest }) => ({ id: _id, ...rest })
 );
 
-const unPrettyIds = arr => arr.map(
+export const unPrettyIds = (arr: any[]) => arr.map(
   ({ id, ...rest }) => ({ _id: new ObjectID(id), ...rest })
 );
 
-const isEmpty = v => typeof v === 'object' ?
-  _.isEmpty(v) :
-  v === undefined || v === null || v === '' || v === 0;
+export const isEmpty: (v: any) => boolean = v => (
+  typeof v === 'object' ?
+    lodashIsEmpty(v) :
+    v === undefined || v === null || v === '' || v === 0
+);
 
 // const isRequired = ({ fieldName, value, errors = [], ...rest }) => {
 //   if (isEmpty(value))
@@ -22,19 +30,17 @@ const isEmpty = v => typeof v === 'object' ?
 /**
  * Check for uniqueness of elements in model.
 */
-const isUnique = async (db, modelName, schema, items) => {
-  const keys = [];
-  for (var key in schema)
-    if (schema[key].unique) keys.push(key);
+export const isUnique = async (db: Db, modelName: string, schema: any, items: any[]) => {
+  const keys = Object.keys(schema).filter(key => schema[key].unique);
 
   if (!keys.length)
     return true;
-    // throw new Error('Unique checking error. No keys to check.');
+  // throw new Error('Unique checking error. No keys to check.');
   if (!items.length)
     throw new Error('Unique checking error. No elements to check.');
 
   const query = {
-    $or: _.flatten(
+    $or: lodashFlatten(
       items.map(
         item => keys.map(
           key => {
@@ -51,7 +57,7 @@ const isUnique = async (db, modelName, schema, items) => {
   return !result.length;
 };
 
-const handleError = (error, res) => {
+export const handleError = (error: Error, res: Response) => {
   if (error.name === 'MongoError') {
     error.message = 'Database error';
     res.status(500);
@@ -61,12 +67,4 @@ const handleError = (error, res) => {
     // console.warn(error);
   }
   res.send({ error: error.message });
-};
-
-module.exports = {
-  isEmpty,
-  isUnique,
-  handleError,
-  prettyIds,
-  unPrettyIds
 };

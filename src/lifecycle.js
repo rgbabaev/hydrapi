@@ -13,7 +13,7 @@ const validateInputField = async (
   },
   value
 ) => {
-  let fieldErrors = [];
+  const fieldErrors = [];
 
   // check if the field is necessary and set default value
   if (required && isEmpty(value))
@@ -42,7 +42,7 @@ const validateInputField = async (
     value,
     fieldErrors
   };
-}
+};
 
 const validateInputItems = async (schema, items) => {
   const fieldNames = Object.keys(schema);

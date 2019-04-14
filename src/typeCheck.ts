@@ -1,35 +1,52 @@
-const _ = require('lodash');
-const { ObjectID } = require('mongodb');
-const { isEmpty } = require('./common');
+import _ from 'lodash';
+import { ObjectID, Db } from 'mongodb';
+import { isEmpty } from './common';
+
+export type TFieldType = 'any' | 'string' | 'urlCode' | 'number' | 'boolean' | 'id' | ((value: any) => void);
+
+export interface ISchemaField {
+  type: TFieldType;
+  value: any;
+  required: boolean;
+  multiple: boolean;
+}
+
+export interface ISchemaFieldWithName extends ISchemaField {
+  fieldName: string;
+}
+
+export interface ISchema {
+  [fieldName: string]: ISchemaField;
+}
 
 const simpleTypes = {
-  any: value => value,
+  any: <T>(value: T): T => value,
 
-  string: value => {
+  string: <T>(value: T): T => {
     if (typeof value !== 'string')
       throw new Error(`Must be a string.`);
     return value;
   },
 
-  urlCode: value => {
+  urlCode: <T>(value: T): T => {
     if (!(typeof value === 'string' && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(value)))
       throw new Error(`Must contain only lower case letters, digits and "-".`);
     return value;
   },
 
-  number: value => {
+  number: <T>(value: T): T => {
     if (typeof value !== 'number')
       throw new Error(`Must be a number.`);
     return value;
   },
 
-  boolean: value => {
+  boolean: <T>(value: T): T => {
     if (typeof value !== 'boolean')
       throw new Error(`Must be a boolean.`);
     return value;
   },
 
-  id: value => {
+  id: <T>(value: T): T => {
     if (
       !(value instanceof ObjectID) &&
       !(typeof value === 'string' && [12, 24].includes(value.length)) // replace to regex
@@ -40,7 +57,7 @@ const simpleTypes = {
   // email
 };
 
-const checkFieldType = async ({
+const checkFieldType: (arg: ISchemaFieldWithName) => Promise<any> = async ({
   type,
   fieldName,
   value,
@@ -53,7 +70,7 @@ const checkFieldType = async ({
   value = multiple ? value : [value];
 
   for (let i = 0; i < value.length; i++) {
-    if (Object.keys(simpleTypes).includes(type))
+    if (typeof type === 'string' && Object.keys(simpleTypes).includes(type))
       try {
         value[i] = await simpleTypes[type](value[i]);
       } catch (err) {
@@ -66,7 +83,7 @@ const checkFieldType = async ({
         error = `Invalid type of field "${fieldName}". ${err.message}`;
       }
     else
-      error = `Invalid type key of "${fieldName}" in schema.`;
+      error = `Invalid 'type' property of "${fieldName}" in schema.`;
   }
 
   if (error) throw new Error(error);
@@ -74,11 +91,17 @@ const checkFieldType = async ({
   return multiple ? value : value[0];
 };
 
+interface IRelationArgs {
+  db: Db,
+  collectionName: string;
+  checkTargetExists?: boolean;
+}
+
 const relation = ({
   db,
   collectionName,
-  checkTargetExists = true
-}) => async value => {
+  checkTargetExists = true // TODO: implement?
+}: IRelationArgs) => async (value: any) => {
   try {
     simpleTypes.id(value);
     if (!(value instanceof ObjectID))
@@ -97,8 +120,14 @@ const relation = ({
   return value;
 };
 
-const shape = model => async valueObject => {
-  if (typeof valueObject !== 'object') return;
+type TValueObject = {
+  [key: string]: any;
+}
+
+type TShape = (model: ISchema) => (valueObject: TValueObject) => Promise<TValueObject>;
+
+const shape: TShape = model => async (valueObject) => {
+  if (typeof valueObject !== 'object') throw new Error('Input value is not a object');
 
   const modelKeys = Object.keys(model);
 
@@ -106,7 +135,7 @@ const shape = model => async valueObject => {
   if (excessKeys.length)
     throw new Error(`Input object has an excess keys: ${excessKeys.join(', ')}.`);
 
-  for (var key in model) {
+  for (const key in model) {
     if (model[key].required && isEmpty(valueObject[key]))
       throw new Error(`Field "${key}" is required.`);
 
