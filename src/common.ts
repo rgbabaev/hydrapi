@@ -3,8 +3,8 @@ import { Response } from 'express';
 import lodashIsEmpty from 'lodash/isEmpty';
 import lodashFlatten from 'lodash/flatten';
 
-interface IDBEntry {
-  _id: ObjectID;
+export interface IDBEntry {
+  _id?: ObjectID;
 }
 
 export const prettyIds = <T extends IDBEntry>(arr: T[]) => arr.map(
