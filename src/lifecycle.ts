@@ -1,19 +1,18 @@
-const _ = require('lodash');
-const { isEmpty } = require('./common');
-const { checkFieldType } = require('./typeCheck');
+import _ from 'lodash';
+import { isEmpty } from './common';
+import { checkFieldType, ISchema, TFieldType, ISchemaField } from './typeCheck';
 
 const validateInputField = async (
-  fieldName,
+  fieldName: string,
   {
     defaultValue,
     required,
     type,
-    modification,
     multiple
-  },
-  value
+  }: ISchemaField,
+  value: any
 ) => {
-  const fieldErrors = [];
+  const fieldErrors: string[] = [];
 
   // check if the field is necessary and set default value
   if (required && isEmpty(value))
@@ -44,26 +43,26 @@ const validateInputField = async (
   };
 };
 
-const validateInputItems = async (schema, items) => {
+const validateInputItems = async <P>(schema: ISchema, items: P[]): Promise<any[]> => {
   const fieldNames = Object.keys(schema);
-  const errors = {};
+  const errors: { [key: string]: string[] } = {};
 
   const r = await Promise.all(
-    items.map(async (item, i) => {
-      let itemErrors = [];
-      const filteredItem = {};
+    items.map(async (item: { [key: string]: any }, i) => {
+      let itemErrors: string[] = [];
+      const filteredItem: { [key: string]: any } = {};
 
-      for (const fieldName in schema) {
+      fieldNames.forEach(async (fieldName) => {
         const { fieldErrors, value } = await validateInputField(
           fieldName,
           schema[fieldName],
           item[fieldName]
         );
-        itemErrors.push(fieldErrors);
+        itemErrors.push(...fieldErrors);
         filteredItem[fieldName] = value;
-      }
+      });
 
-      itemErrors = _.flattenDeep(itemErrors);
+      itemErrors = _.flattenDeep(itemErrors); // is this needed?
       if (itemErrors.length) errors[i] = itemErrors;
       return itemErrors.length ? null : filteredItem;
     })

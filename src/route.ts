@@ -1,5 +1,22 @@
-const { ObjectID } = require('mongodb');
-const _ = require('lodash');
+import { ObjectID, Db } from 'mongodb';
+import { Application, Response, Request } from 'express';
+import _ from 'lodash';
+import { ISchema } from './typeCheck';
+import { IDBEntry } from 'common';
+
+interface IBaseEvtHandlerArgs {
+  db: Db;
+  req: Request;
+  res: Response;
+}
+
+interface IEvtHandlerArgs extends IBaseEvtHandlerArgs {
+  items: IDBEntry[];
+}
+
+interface IDeleteHandlerArgs extends IBaseEvtHandlerArgs {
+  entityIds: ObjectID[];
+}
 
 const {
   isUnique,
@@ -9,7 +26,21 @@ const {
 } = require('./common');
 const { validateInputItems } = require('./lifecycle.js');
 
-module.exports = ({
+interface IHandlers {
+  beforeAddQuery?: <T>(arg: IEvtHandlerArgs) => Promise<T>;
+  beforePatchQuery?: <T>(arg: IEvtHandlerArgs) => Promise<T>;
+  beforeDeleteQuery?: <T>(arg: IDeleteHandlerArgs) => Promise<T>;
+  afterGetQuery?: <T>(arg: IEvtHandlerArgs) => Promise<T>;
+  afterAddQuery?: <T>(arg: IEvtHandlerArgs) => Promise<T>;
+};
+
+interface IRouteArgs {
+  modelName: string;
+  schema: ISchema;
+  handlers: IHandlers;
+}
+
+export default ({
   modelName,
   schema,
   handlers: {
@@ -19,7 +50,7 @@ module.exports = ({
     afterGetQuery,
     afterAddQuery
   } = {}
-}) => (app, db) => {
+}: IRouteArgs) => (app: Application, db: Db) => {
   const collection = db.collection(modelName);
 
   app.get(`/${modelName}`, async (req, res) => {
@@ -36,15 +67,14 @@ module.exports = ({
         }) :
         items;
       res.send({ data: { [modelName]: prettyIds(items) } });
-    }
-    catch (err) {
+    } catch (err) {
       handleError(err, res);
     }
   });
 
   app.post(`/${modelName}`, async (req, res) => {
     try {
-      let items = _.get(req, `body.${modelName}`, undefined);
+      let items: IDBEntry[] = _.get(req, `body.${modelName}`, undefined);
 
       if (!(items instanceof Array) || items.length === 0)
         throw new Error(`Invalid request: ${modelName} must be an non-empty array.`);
@@ -65,7 +95,7 @@ module.exports = ({
       items = items.map(item => _.omitBy(item, i => i === undefined));
 
       await collection.insertMany(items)
-        .then(async ({ ops: items}) => {
+        .then(async ({ ops: items }) => { // eslint-disable-line no-shadow
           // afterAddQuery
           items = typeof afterAddQuery === 'function' ?
             await afterAddQuery({
@@ -78,8 +108,7 @@ module.exports = ({
 
           res.send({ data: { [modelName]: prettyIds(items) } });
         });
-    }
-    catch (err) {
+    } catch (err) {
       handleError(err, res);
     }
   });
@@ -87,7 +116,7 @@ module.exports = ({
   // TODO: answer with some bad items responses
   app.patch(`/${modelName}`, async (req, res) => {
     try {
-      let items = _.get(req, `body.${modelName}`, undefined);
+      let items: IDBEntry[] = _.get(req, `body.${modelName}`, undefined);
 
       if (!(items instanceof Array) || items.length === 0)
         throw new Error(`Invalid request: ${modelName} must be an non-empty array.`);
@@ -128,8 +157,7 @@ module.exports = ({
       await collection.find({ $or: result }).toArray().then(data => {
         res.send({ data: { [modelName]: prettyIds(data) } });
       });
-    }
-    catch (err) {
+    } catch (err) {
       handleError(err, res);
     }
   });
@@ -141,7 +169,7 @@ module.exports = ({
       if (!(entityIds instanceof Array) || entityIds.length === 0)
         throw new Error(`Invalid request: ${modelName} must be an array of ${modelName} IDs.`);
 
-      entityIds = entityIds.map(id => ({ '_id': new ObjectID(id) }));
+      entityIds = entityIds.map(id => ({ _id: new ObjectID(id) }));
 
       entityIds = typeof beforeDeleteQuery === 'function' ?
         await beforeDeleteQuery({
@@ -162,9 +190,8 @@ module.exports = ({
             deletedCount: data.deletedCount,
             data
           });
-        })
-    }
-    catch (err) {
+        });
+    } catch (err) {
       handleError(err, res);
     }
   });

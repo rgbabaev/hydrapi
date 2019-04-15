@@ -6,17 +6,22 @@ export type TFieldType = 'any' | 'string' | 'urlCode' | 'number' | 'boolean' | '
 
 export interface ISchemaField {
   type: TFieldType;
-  value: any;
+  defaultValue: any;
   required: boolean;
   multiple: boolean;
-}
-
-export interface ISchemaFieldWithName extends ISchemaField {
-  fieldName: string;
+  unique: boolean;
 }
 
 export interface ISchema {
   [fieldName: string]: ISchemaField;
+}
+
+export interface IFieldToCheck {
+  fieldName: string;
+  type: TFieldType;
+  value: any;
+  required: boolean;
+  multiple: boolean;
 }
 
 const simpleTypes = {
@@ -57,7 +62,7 @@ const simpleTypes = {
   // email
 };
 
-const checkFieldType: (arg: ISchemaFieldWithName) => Promise<any> = async ({
+export const checkFieldType: (arg: IFieldToCheck) => Promise<any> = async ({
   type,
   fieldName,
   value,
@@ -97,7 +102,7 @@ interface IRelationArgs {
   checkTargetExists?: boolean;
 }
 
-const relation = ({
+export const relation = ({
   db,
   collectionName,
   checkTargetExists = true // TODO: implement?
@@ -126,7 +131,7 @@ type TValueObject = {
 
 type TShape = (model: ISchema) => (valueObject: TValueObject) => Promise<TValueObject>;
 
-const shape: TShape = model => async (valueObject) => {
+export const shape: TShape = model => async (valueObject) => {
   if (typeof valueObject !== 'object') throw new Error('Input value is not a object');
 
   const modelKeys = Object.keys(model);
@@ -151,9 +156,9 @@ const shape: TShape = model => async (valueObject) => {
   return valueObject;
 };
 
-module.exports = {
-  checkFieldType,
-  ...simpleTypes,
-  relation,
-  shape
-};
+export const any = simpleTypes.any;
+export const string = simpleTypes.string;
+export const urlCode = simpleTypes.urlCode;
+export const number = simpleTypes.number;
+export const boolean = simpleTypes.boolean;
+export const id = simpleTypes.id;
