@@ -4,7 +4,7 @@ const { ObjectID } = require('mongodb');
 const _ = require('lodash');
 const mime = require('mime-types');
 
-const createRoute = require('./route');
+const createRoute = require('./route').default;
 
 const fsAccess = path => new Promise(r => fs.access(path, err => r(!err)));
 const fsClose = fd => new Promise(r => fs.close(fd, err => r(!err)));
@@ -13,7 +13,7 @@ const fsOpen = (path, flags, mode) => new Promise(
     path,
     flags,
     mode,
-    (err, fd) => err ? reject(err) : resolve(fd)
+    (err, fd) => (err ? reject(err) : resolve(fd))
   )
 );
 const fsRead = (fd, buffer, offset, length, position) => new Promise(
@@ -23,7 +23,7 @@ const fsRead = (fd, buffer, offset, length, position) => new Promise(
     offset,
     length,
     position,
-    (err, bytesRead) => err ? reject(err) : resolve(bytesRead)
+    (err, bytesRead) => (err ? reject(err) : resolve(bytesRead))
   )
 );
 const fsUnlink = path => new Promise(r => fs.unlink(path, err => r(!err)));
@@ -111,7 +111,7 @@ exports.route = (app, db) => {
         return;
       }
 
-      let data = await collection.findOne({ _id: id });
+      const data = await collection.findOne({ _id: id });
       if (data === null || `${id.toString()}.${data.extension}` !== fileName) {
         res.status(404).end();
         return;
@@ -120,8 +120,7 @@ exports.route = (app, db) => {
       const fileStream = fs.createWriteStream(filePath);
       req.pipe(fileStream);
       req.on('end', () => res.status(202).end());
-    }
-    catch (err) {
+    } catch (err) {
       res.status(500).end();
     }
   });
@@ -142,8 +141,7 @@ exports.route = (app, db) => {
       // fileStream.on('end', () => {
       //   res.end();
       // });
-    }
-    catch (err) {
+    } catch (err) {
       res.status(404).end();
     }
   });
