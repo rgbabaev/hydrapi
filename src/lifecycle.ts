@@ -43,7 +43,7 @@ const validateInputField = async (
   };
 };
 
-const validateInputItems = async <P>(schema: ISchema, items: P[]): Promise<any[]> => {
+export const validateInputItems = async <P>(schema: ISchema, items: P[]): Promise<any[]> => {
   const fieldNames = Object.keys(schema);
   const errors: { [key: string]: string[] } = {};
 
@@ -77,8 +77,4 @@ const validateInputItems = async <P>(schema: ISchema, items: P[]): Promise<any[]
   }
 
   return r;
-};
-
-module.exports = {
-  validateInputItems
 };

@@ -4,7 +4,17 @@ import lodashIsEmpty from 'lodash/isEmpty';
 import lodashFlatten from 'lodash/flatten';
 
 export interface IDBEntry {
-  _id?: ObjectID;
+  _id: ObjectID;
+  [key: string]: any;
+}
+
+export interface INewEntry {
+  [key: string]: any;
+}
+
+export interface IExistEntry {
+  id: string;
+  [key: string]: any;
 }
 
 export const prettyIds = <T extends IDBEntry>(arr: T[]) => arr.map(
