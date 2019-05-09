@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import { isEmpty } from './common';
-import { checkFieldType, ISchema, TFieldType, ISchemaField } from './typeCheck';
+import { checkFieldType, ISchema, ISchemaField } from './typeCheck';
 
 const validateInputField = async (
   fieldName: string,
