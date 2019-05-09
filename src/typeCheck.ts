@@ -6,22 +6,14 @@ export type TFieldType = 'any' | 'string' | 'urlCode' | 'number' | 'boolean' | '
 
 export interface ISchemaField {
   type: TFieldType;
-  defaultValue: any;
-  required: boolean;
-  multiple: boolean;
-  unique: boolean;
+  defaultValue?: any;
+  required?: boolean;
+  multiple?: boolean;
+  unique?: boolean;
 }
 
 export interface ISchema {
   [fieldName: string]: ISchemaField;
-}
-
-export interface IFieldToCheck {
-  fieldName: string;
-  type: TFieldType;
-  value: any;
-  required: boolean;
-  multiple: boolean;
 }
 
 const simpleTypes = {
@@ -62,7 +54,15 @@ const simpleTypes = {
   // email
 };
 
-export const checkFieldType: (arg: IFieldToCheck) => Promise<any> = async ({
+interface ICheckFieldTypeArg {
+  fieldName: string;
+  type: TFieldType;
+  value: any;
+  required?: boolean;
+  multiple?: boolean;
+}
+
+export const checkFieldType: (arg: ICheckFieldTypeArg) => Promise<any> = async ({
   type,
   fieldName,
   value,

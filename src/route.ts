@@ -2,7 +2,16 @@ import { ObjectID, Db } from 'mongodb';
 import { Application, Response, Request } from 'express';
 import _ from 'lodash';
 import { ISchema } from './typeCheck';
-import { IDBEntry } from 'common';
+import {
+  IDBEntry,
+  IExistEntry,
+  INewEntry,
+  isUnique,
+  prettyIds,
+  handleError,
+  unPrettyIds,
+} from './common';
+import { validateInputItems } from './lifecycle';
 
 interface IBaseEvtHandlerArgs {
   db: Db;
@@ -10,31 +19,28 @@ interface IBaseEvtHandlerArgs {
   res: Response;
 }
 
-interface IEvtHandlerArgs extends IBaseEvtHandlerArgs {
-  items: IDBEntry[];
+export interface IEvtHandlerArgs<T> extends IBaseEvtHandlerArgs {
+  items: T[];
 }
 
-interface IDeleteHandlerArgs extends IBaseEvtHandlerArgs {
+type TEvtHandler<T> = (arg: IEvtHandlerArgs<T>) => Promise<T[]>;
+
+export interface IDeleteEvtHandlerArgs extends IBaseEvtHandlerArgs {
+  // Maybe here must be string[] instead of ObjectID[]
   entityIds: ObjectID[];
 }
 
-const {
-  isUnique,
-  prettyIds,
-  handleError,
-  unPrettyIds,
-} = require('./common');
-const { validateInputItems } = require('./lifecycle.js');
+type TDeleteEvtHandler = (arg: IDeleteEvtHandlerArgs) => Promise<ObjectID[]>
 
 interface IHandlers {
-  beforeAddQuery?: <T>(arg: IEvtHandlerArgs) => Promise<T>;
-  beforePatchQuery?: <T>(arg: IEvtHandlerArgs) => Promise<T>;
-  beforeDeleteQuery?: <T>(arg: IDeleteHandlerArgs) => Promise<T>;
-  afterGetQuery?: <T>(arg: IEvtHandlerArgs) => Promise<T>;
-  afterAddQuery?: <T>(arg: IEvtHandlerArgs) => Promise<T>;
+  beforeAddQuery?: TEvtHandler<INewEntry>;
+  beforePatchQuery?: TEvtHandler<IExistEntry>;
+  beforeDeleteQuery?: TDeleteEvtHandler;
+  afterGetQuery?: TEvtHandler<IDBEntry>;
+  afterAddQuery?: TEvtHandler<IDBEntry>;
 };
 
-interface IRouteArgs {
+export interface IRouteArgs {
   modelName: string;
   schema: ISchema;
   handlers: IHandlers;
@@ -74,7 +80,7 @@ export default ({
 
   app.post(`/${modelName}`, async (req, res) => {
     try {
-      let items: IDBEntry[] = _.get(req, `body.${modelName}`, undefined);
+      let items: INewEntry[] = _.get(req, `body.${modelName}`, undefined);
 
       if (!(items instanceof Array) || items.length === 0)
         throw new Error(`Invalid request: ${modelName} must be an non-empty array.`);
@@ -116,7 +122,7 @@ export default ({
   // TODO: answer with some bad items responses
   app.patch(`/${modelName}`, async (req, res) => {
     try {
-      let items: IDBEntry[] = _.get(req, `body.${modelName}`, undefined);
+      let items: IExistEntry[] = _.get(req, `body.${modelName}`, undefined);
 
       if (!(items instanceof Array) || items.length === 0)
         throw new Error(`Invalid request: ${modelName} must be an non-empty array.`);
@@ -125,7 +131,7 @@ export default ({
       if (!await isUnique(db, modelName, schema, items))
         throw new Error('Elements not unique');
 
-      items = items.map(item => _.omitBy(item, i => i === undefined));
+      items = <IExistEntry[]>items.map(item => _.omitBy(item, i => i === undefined));
 
       items = typeof beforePatchQuery === 'function' ?
         await beforePatchQuery({
