@@ -44,7 +44,6 @@ const validateInputField = async (
 };
 
 export const validateInputItems = async <P>(schema: ISchema, items: P[]): Promise<any[]> => {
-  const fieldNames = Object.keys(schema);
   const errors: { [key: string]: string[] } = {};
 
   const r = await Promise.all(
@@ -52,7 +51,7 @@ export const validateInputItems = async <P>(schema: ISchema, items: P[]): Promis
       let itemErrors: string[] = [];
       const filteredItem: { [key: string]: any } = {};
 
-      fieldNames.forEach(async (fieldName) => {
+      for (const fieldName in schema) {
         const { fieldErrors, value } = await validateInputField(
           fieldName,
           schema[fieldName],
@@ -60,7 +59,7 @@ export const validateInputItems = async <P>(schema: ISchema, items: P[]): Promis
         );
         itemErrors.push(...fieldErrors);
         filteredItem[fieldName] = value;
-      });
+      }
 
       itemErrors = _.flattenDeep(itemErrors); // is this needed?
       if (itemErrors.length) errors[i] = itemErrors;
