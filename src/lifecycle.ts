@@ -2,23 +2,34 @@ import _ from 'lodash';
 import { isEmpty } from './common';
 import { checkFieldType, ISchema, ISchemaField } from './typeCheck';
 
-const validateInputField = async (
+type TValidateInputField = (
   fieldName: string,
+  schemaField: ISchemaField,
+  value: any
+) => Promise<{
+  value: any;
+  fieldErrors: string[];
+}>
+
+const validateInputField: TValidateInputField = async (
+  fieldName,
   {
     defaultValue,
     required,
     type,
     multiple
-  }: ISchemaField,
-  value: any
+  },
+  value
 ) => {
   const fieldErrors: string[] = [];
 
-  // check if the field is necessary and set default value
-  if (required && isEmpty(value))
-    fieldErrors.push(`Field "${fieldName}" is required.`);
-  else if (value === undefined && defaultValue !== undefined)
-    value = defaultValue;
+  if (isEmpty(value)) {
+    if (required) {
+      fieldErrors.push(`Field "${fieldName}" is required.`);
+    }
+
+    value = defaultValue || null;
+  }
 
   try {
     value = await checkFieldType({
@@ -31,11 +42,6 @@ const validateInputField = async (
   } catch (err) {
     fieldErrors.push(err.message);
   }
-
-  // value modification
-  // if (typeof modification === 'function')
-  //   try { value = await modification(value); }
-  //   catch (err) { fieldErrors.push(err.message); }
 
   return {
     value,
