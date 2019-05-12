@@ -26,16 +26,10 @@ export const unPrettyIds = (arr: any[]) => arr.map(
 );
 
 export const isEmpty: (v: any) => boolean = v => (
-  typeof v === 'object' ?
+  v instanceof Object ?
     lodashIsEmpty(v) :
-    v === undefined || v === null || v === '' || v === 0
+    v === undefined || v === null || v === ''
 );
-
-// const isRequired = ({ fieldName, value, errors = [], ...rest }) => {
-//   if (isEmpty(value))
-//     errors.push(`Field ${fieldName} is required.`);
-//   return { fieldName, value, errors, ...rest };
-// };
 
 /**
  * Check for uniqueness of elements in model.

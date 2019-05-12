@@ -10,6 +10,7 @@ export interface ISchemaField {
   required?: boolean;
   multiple?: boolean;
   unique?: boolean;
+  description?: string;
 }
 
 export interface ISchema {
@@ -54,15 +55,15 @@ const simpleTypes = {
   // email
 };
 
-interface ICheckFieldTypeArg {
+type TCheckFieldType = (arg: {
   fieldName: string;
   type: TFieldType;
   value: any;
   required?: boolean;
   multiple?: boolean;
-}
+}) => Promise<any>;
 
-export const checkFieldType: (arg: ICheckFieldTypeArg) => Promise<any> = async ({
+export const checkFieldType: TCheckFieldType = async ({
   type,
   fieldName,
   value,
@@ -71,7 +72,7 @@ export const checkFieldType: (arg: ICheckFieldTypeArg) => Promise<any> = async (
 }) => {
   let error = '';
 
-  if (!required && value === undefined) return;
+  if (!required && isEmpty(value)) return;
   value = multiple ? value : [value];
 
   for (let i = 0; i < value.length; i++) {
@@ -132,7 +133,8 @@ type TValueObject = {
 type TShape = (model: ISchema) => (valueObject: TValueObject) => Promise<TValueObject>;
 
 export const shape: TShape = model => async (valueObject) => {
-  if (typeof valueObject !== 'object') throw new Error('Input value is not a object');
+  if (isEmpty(valueObject)) valueObject = {};
+  else if (typeof valueObject !== 'object') throw new Error('Input value is not a object');
 
   const modelKeys = Object.keys(model);
 
