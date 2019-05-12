@@ -72,7 +72,7 @@ export const checkFieldType: TCheckFieldType = async ({
 }) => {
   let error = '';
 
-  if (!required && isEmpty(value)) return;
+  if (!required && isEmpty(value)) return null;
   value = multiple ? value : [value];
 
   for (let i = 0; i < value.length; i++) {
