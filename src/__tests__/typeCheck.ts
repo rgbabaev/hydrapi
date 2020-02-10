@@ -1,7 +1,8 @@
 import {
   any,
   string,
-  urlCode
+  urlCode,
+  date
 } from '../typeCheck';
 
 describe('Tests for any()', () => {
@@ -65,5 +66,28 @@ describe('Tests for urlCode()', () => {
   });
   it('urlCode() will return string', () => {
     expect(urlCode('azazza')).toEqual('azazza');
+  });
+});
+
+describe('Tests for Date()', () => {
+  const errMsg = 'Must be a string compatible with Date().';
+
+  it('date() will throw error on non-Date values', () => {
+    expect(() => date('')).toThrowError(errMsg);
+    expect(() => date('exa')).toThrowError(errMsg);
+    expect(() => date(123)).toThrowError(errMsg);
+    expect(() => date(true)).toThrowError(errMsg);
+    expect(() => date(false)).toThrowError(errMsg);
+    expect(() => date(NaN)).toThrowError(errMsg);
+    expect(() => date(undefined)).toThrowError(errMsg);
+    expect(() => date(null)).toThrowError(errMsg);
+    expect(() => date({})).toThrowError(errMsg);
+    expect(() => date([])).toThrowError(errMsg);
+  });
+  // it('date() will throw on wrong values', () => {
+  // });
+  it('date() will return Date', () => {
+    expect(date('2016-05-18').getTime()).toEqual(new Date('2016-05-18').getTime());
+    expect(date('2016-05-18T16:00:00Z')).toEqual(new Date('2016-05-18T16:00:00Z'));
   });
 });
