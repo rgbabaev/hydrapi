@@ -102,7 +102,6 @@ export default ({
 
       await collection.insertMany(items)
         .then(async ({ ops: items }) => { // eslint-disable-line no-shadow
-          // afterAddQuery
           items = typeof afterAddQuery === 'function' ?
             await afterAddQuery({
               db,

@@ -2,7 +2,7 @@ import _ from 'lodash';
 import { ObjectID, Db } from 'mongodb';
 import { isEmpty } from './common';
 
-export type TFieldType = 'any' | 'string' | 'urlCode' | 'number' | 'boolean' | 'id' | ((value: any) => void);
+export type TFieldType = 'any' | 'string' | 'urlCode' | 'number' | 'boolean' | 'date' | 'id' | (<T>(value: T) => T);
 
 export interface ISchemaField {
   type: TFieldType;
@@ -52,6 +52,17 @@ const simpleTypes = {
       throw new Error(`Must be an ObjectID.`);
     return value;
   },
+
+  date: <T>(value: T): any => {
+    if (typeof value === 'string' && value) {
+      const parsedValue = Date.parse(value);
+
+      if (!isNaN(parsedValue)) {
+        return new Date(parsedValue);
+      }
+    }
+    throw new Error(`Must be a string compatible with Date().`);
+  }
   // email
 };
 
@@ -70,7 +81,7 @@ export const checkFieldType: TCheckFieldType = async ({
   required,
   multiple
 }) => {
-  let error = '';
+  let error: string[] = [];
 
   if (!required && isEmpty(value)) return null;
   value = multiple ? value : [value];
@@ -80,19 +91,21 @@ export const checkFieldType: TCheckFieldType = async ({
       try {
         value[i] = await simpleTypes[type](value[i]);
       } catch (err) {
-        error = `Invalid type of field "${fieldName}". ${err.message}`;
+        error.push(`Invalid type of field "${fieldName}". ${err.message}`);
       }
     else if (typeof type === 'function')
       try {
         value[i] = await type(value[i]);
       } catch (err) {
-        error = `Invalid type of field "${fieldName}". ${err.message}`;
+        error.push(`Invalid type of field "${fieldName}". ${err.message}`);
       }
     else
-      error = `Invalid 'type' property of "${fieldName}" in schema.`;
+      error.push(`Invalid 'type' property of "${fieldName}" in schema.`);
   }
 
-  if (error) throw new Error(error);
+  if (error.length > 0) {
+    throw new Error(error.join('\n'));
+  }
 
   return multiple ? value : value[0];
 };
@@ -164,3 +177,4 @@ export const urlCode = simpleTypes.urlCode;
 export const number = simpleTypes.number;
 export const boolean = simpleTypes.boolean;
 export const id = simpleTypes.id;
+export const date = simpleTypes.date;

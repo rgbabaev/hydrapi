@@ -1,5 +1,5 @@
 import { Db } from 'mongodb';
-export declare type TFieldType = 'any' | 'string' | 'urlCode' | 'number' | 'boolean' | 'id' | ((value: any) => void);
+export declare type TFieldType = 'any' | 'string' | 'urlCode' | 'number' | 'boolean' | 'date' | 'id' | (<T>(value: T) => T);
 export interface ISchemaField {
     type: TFieldType;
     defaultValue?: any;
@@ -36,4 +36,5 @@ export declare const urlCode: <T>(value: T) => T;
 export declare const number: <T>(value: T) => T;
 export declare const boolean: <T>(value: T) => T;
 export declare const id: <T>(value: T) => T;
+export declare const date: <T>(value: T) => any;
 export {};

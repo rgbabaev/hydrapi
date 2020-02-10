@@ -76,7 +76,7 @@ export const validateInputItems = async <P>(schema: ISchema, items: P[]): Promis
   if (Object.keys(errors).length) {
     let errorText = 'Validation errors:';
     for (const i in errors) {
-      errorText += `\nitem ${i}: ${errors[i].join(' ')}`;
+      errorText += `\nitem ${i}:\n${errors[i].join('\n')}`;
     }
     throw new Error(errorText);
   }
