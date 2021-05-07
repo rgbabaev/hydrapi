@@ -9,7 +9,7 @@
   "dependencies": {
     "body-parser": "^1.18.2",
     "express": "^4.16.3",
-    "lodash": "4.17.15",
+    "lodash": "4.17.21",
     "mime-types": "^2.1.19",
     "mongodb": "3.5.2",
     "transliteration": "^1.6.2"
