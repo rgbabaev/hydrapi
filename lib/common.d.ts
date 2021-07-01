@@ -13,7 +13,7 @@ export interface IExistEntry {
 }
 export declare const prettyIds: <T extends IDBEntry>(arr: T[]) => ({
     id: ObjectID;
-} & Pick<T, Exclude<keyof T, "_id">>)[];
+} & Omit<T, "_id">)[];
 export declare const unPrettyIds: (arr: any[]) => any[];
 export declare const isEmpty: (v: any) => boolean;
 /**
