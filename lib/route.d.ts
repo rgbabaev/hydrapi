@@ -1,4 +1,4 @@
-import { ObjectID, Db } from 'mongodb';
+import { ObjectId, Db } from 'mongodb';
 import { Application, Response, Request } from 'express';
 import { ISchema } from './typeCheck';
 import { IDBEntry, IExistEntry, INewEntry } from './common';
@@ -12,9 +12,9 @@ export interface IEvtHandlerArgs<T> extends IBaseEvtHandlerArgs {
 }
 declare type TEvtHandler<T> = (arg: IEvtHandlerArgs<T>) => Promise<T[]>;
 export interface IDeleteEvtHandlerArgs extends IBaseEvtHandlerArgs {
-    entityIds: ObjectID[];
+    entityIds: ObjectId[];
 }
-declare type TDeleteEvtHandler = (arg: IDeleteEvtHandlerArgs) => Promise<ObjectID[]>;
+declare type TDeleteEvtHandler = (arg: IDeleteEvtHandlerArgs) => Promise<ObjectId[]>;
 interface IHandlers {
     beforeAddQuery?: TEvtHandler<INewEntry>;
     beforePatchQuery?: TEvtHandler<IExistEntry>;

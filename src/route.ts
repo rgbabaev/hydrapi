@@ -1,4 +1,4 @@
-import { ObjectID, Db } from 'mongodb';
+import { ObjectId, Db } from 'mongodb';
 import { Application, Response, Request } from 'express';
 import _ from 'lodash';
 import { ISchema } from './typeCheck';
@@ -26,11 +26,11 @@ export interface IEvtHandlerArgs<T> extends IBaseEvtHandlerArgs {
 type TEvtHandler<T> = (arg: IEvtHandlerArgs<T>) => Promise<T[]>;
 
 export interface IDeleteEvtHandlerArgs extends IBaseEvtHandlerArgs {
-  // Maybe here must be string[] instead of ObjectID[]
-  entityIds: ObjectID[];
+  // Maybe here must be string[] instead of ObjectId[]
+  entityIds: ObjectId[];
 }
 
-type TDeleteEvtHandler = (arg: IDeleteEvtHandlerArgs) => Promise<ObjectID[]>
+type TDeleteEvtHandler = (arg: IDeleteEvtHandlerArgs) => Promise<ObjectId[]>
 
 interface IHandlers {
   beforeAddQuery?: TEvtHandler<INewEntry>;
@@ -38,7 +38,7 @@ interface IHandlers {
   beforeDeleteQuery?: TDeleteEvtHandler;
   afterGetQuery?: TEvtHandler<IDBEntry>;
   afterAddQuery?: TEvtHandler<IDBEntry>;
-};
+}
 
 export interface IRouteArgs {
   modelName: string;
@@ -174,7 +174,7 @@ export default ({
       if (!(entityIds instanceof Array) || entityIds.length === 0)
         throw new Error(`Invalid request: ${modelName} must be an array of ${modelName} IDs.`);
 
-      entityIds = entityIds.map(id => ({ _id: new ObjectID(id) }));
+      entityIds = entityIds.map(id => ({ _id: new ObjectId(id) }));
 
       entityIds = typeof beforeDeleteQuery === 'function' ?
         await beforeDeleteQuery({

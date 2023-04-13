@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { ObjectID, Db } from 'mongodb';
+import { ObjectId, Db } from 'mongodb';
 import _ from 'lodash';
 import mime from 'mime-types';
 import { Application, Request } from 'express';
@@ -108,7 +108,7 @@ export const route = (app: Application, db: Db) => {
     const collection = db.collection(MODEL_NAME);
     try {
       const { fileName } = req.params;
-      const id = new ObjectID(fileName.substr(0, 24));
+      const id = new ObjectId(fileName.substr(0, 24));
       const filePath = path.join(UPLOAD_DIR, fileName);
 
       if (await fsAccess(filePath)) {
@@ -132,7 +132,7 @@ export const route = (app: Application, db: Db) => {
 
   app.get(`${FILE_ROUTE}/:fileName`, async (req, res) => {
     try {
-      const id = new ObjectID(req.params.fileName.substr(0, 24));
+      const id = new ObjectId(req.params.fileName.substr(0, 24));
       const fileExtension = path.extname(req.params.fileName);
       const filePath = path.join(UPLOAD_DIR, `${id.toString()}${fileExtension}`);
       const mimeType = mime.lookup(filePath);

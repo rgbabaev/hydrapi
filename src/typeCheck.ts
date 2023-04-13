@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { ObjectID, Db } from 'mongodb';
+import { ObjectId, Db } from 'mongodb';
 import { isEmpty } from './common';
 
 export type TFieldType = 'any' | 'string' | 'urlCode' | 'number' | 'boolean' | 'date' | 'id' | (<T>(value: T) => T);
@@ -46,10 +46,10 @@ const simpleTypes = {
 
   id: <T>(value: T): T => {
     if (
-      !(value instanceof ObjectID) &&
+      !(value instanceof ObjectId) &&
       !(typeof value === 'string' && [12, 24].includes(value.length)) // replace to regex
     )
-      throw new Error(`Must be an ObjectID.`);
+      throw new Error(`Must be an ObjectId.`);
     return value;
   },
 
@@ -81,7 +81,7 @@ export const checkFieldType: TCheckFieldType = async ({
   required,
   multiple
 }) => {
-  let error: string[] = [];
+  const error: string[] = [];
 
   if (!required && isEmpty(value)) return null;
   value = multiple ? value : [value];
@@ -123,8 +123,8 @@ export const relation = ({
 }: IRelationArgs) => async (value: any) => {
   try {
     simpleTypes.id(value);
-    if (!(value instanceof ObjectID))
-      value = new ObjectID(value);
+    if (!(value instanceof ObjectId))
+      value = new ObjectId(value);
 
     const r = await db.collection(collectionName)
       .find({ $or: [{ _id: value }] })
@@ -145,7 +145,7 @@ type TValueObject = {
 
 type TShape = (model: ISchema) => (valueObject: TValueObject) => Promise<TValueObject>;
 
-export const shape: TShape = model => async (valueObject) => {
+export const shape: TShape = model => async valueObject => {
   if (isEmpty(valueObject)) valueObject = {};
   else if (typeof valueObject !== 'object') throw new Error('Input value is not a object');
 
