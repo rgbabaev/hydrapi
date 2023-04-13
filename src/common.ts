@@ -1,10 +1,10 @@
-import { ObjectID, Db } from 'mongodb';
+import { ObjectId, Db } from 'mongodb';
 import { Response } from 'express';
 import lodashIsEmpty from 'lodash/isEmpty';
 import lodashFlatten from 'lodash/flatten';
 
 export interface IDBEntry {
-  _id: ObjectID;
+  _id: ObjectId;
   [key: string]: any;
 }
 
@@ -22,14 +22,15 @@ export const prettyIds = <T extends IDBEntry>(arr: T[]) => arr.map(
 );
 
 export const unPrettyIds = (arr: any[]) => arr.map(
-  ({ id, ...rest }) => ({ _id: new ObjectID(id), ...rest })
+  ({ id, ...rest }) => ({ _id: new ObjectId(id), ...rest })
 );
 
-export const isEmpty: (v: any) => boolean = v => (
-  v instanceof Object ?
-    lodashIsEmpty(v) :
-    v === undefined || v === null || v === ''
-);
+export const isEmpty: (v: any) => boolean = v => {
+  if (v instanceof ObjectId) return false;
+  return v instanceof Object
+    ? lodashIsEmpty(v)
+    : v === undefined || v === null || v === '';
+};
 
 /**
  * Check for uniqueness of elements in model.

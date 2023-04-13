@@ -1,7 +1,7 @@
-import { ObjectID, Db } from 'mongodb';
+import { ObjectId, Db } from 'mongodb';
 import { Response } from 'express';
 export interface IDBEntry {
-    _id: ObjectID;
+    _id: ObjectId;
     [key: string]: any;
 }
 export interface INewEntry {
@@ -12,8 +12,8 @@ export interface IExistEntry {
     [key: string]: any;
 }
 export declare const prettyIds: <T extends IDBEntry>(arr: T[]) => ({
-    id: ObjectID;
-} & Pick<T, Exclude<keyof T, "_id">>)[];
+    id: ObjectId;
+} & Omit<T, "_id">)[];
 export declare const unPrettyIds: (arr: any[]) => any[];
 export declare const isEmpty: (v: any) => boolean;
 /**
